@@ -6,9 +6,14 @@ import glob, os
 import threading
 import datetime
 
+FILE_EXTENSIONS = ["MP3", "M4A", "AAC", "WAV", "M4B"]
+
 def send_file_to_overcast(filepath, login, password, clean=False):
-    if not (filepath.upper().endswith(".MP3") or filepath.upper().endswith(".M4A")):
-        raise Exception("Only mp3/m4a files can be uploaded.")
+    try:
+        if not filepath.upper().rsplit(".",maxsplit=1)[1] in FILE_EXTENSIONS:
+            raise Exception(f"Only {FILE_EXTENSIONS.join('/')} files can be uploaded.")
+    except IndexError:
+        raise Exception(f"File {filepath} does not have an filename extension.")
 
     with open(filepath, 'rb') as f:
         file_body = f.read()
@@ -63,7 +68,10 @@ def send_directory_to_overcast(dirpath, login, password, clean=False):
     os.chdir(dirpath)
     threads = []
     for filename in glob.glob("*"):
-        if not (filename.upper().endswith(".MP3") or filename.upper().endswith(".M4A")):
+        try:
+            if not filename.upper().rsplit(".",maxsplit=1)[1] in FILE_EXTENSIONS:
+                continue
+        except IndexError:
             continue
 
         t = threading.Thread(target=send_file_to_overcast, args=(filename, login, password, clean))
