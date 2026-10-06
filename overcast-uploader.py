@@ -39,6 +39,7 @@ def send_file_to_overcast(filepath, login, password, clean=False):
     upload_policy = supa.find('input', attrs={'name': 'policy'}).get('value')
     upload_signature = supa.find('input', attrs={'name': 'signature'}).get('value')
     upload_ctype = supa.find('input', attrs={'name': 'Content-Type'}).get('value')
+    success_action_status = supa.find('input', attrs={'name': 'success_action_status'}).get('value')
 
     data_key_prefix += filename
 
@@ -51,12 +52,18 @@ def send_file_to_overcast(filepath, login, password, clean=False):
         "policy": (None, upload_policy),
         "signature": (None, upload_signature),
         "Content-Type": (None, upload_ctype),
+        "success_action_status": (None, success_action_status),
         "file": (filename, file_body)
     }
 
-    r.post(action, files=form_params)
+    response = r.post(action, files=form_params)
 
-    r.post('https://overcast.fm/podcasts/upload_succeeded', data={"key": data_key_prefix})
+    if not response.status_code in [200, 201, 204]:
+        raise Exception(f"Error uploading {filepath}: Server responded with status {response.status_code}")
+
+    respone = r.post('https://overcast.fm/podcasts/upload_succeeded', data={"key": data_key_prefix})
+    if not response.status_code in [200, 201, 204]:
+        raise Exception(f"Error submitting {filepath}: Server responded with status {response.status_code}")
 
     print(filepath + " has been sent")
 
